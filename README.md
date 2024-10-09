@@ -2,14 +2,14 @@
 
 # Soapy
 
-Soapy is a Python package designed to interact with Active Directory (AD) via .NET DLL integration. Its main functionality is to gather AD data, cache it, and return it in a Python dictionary format. The package provides convenient methods for fetching and manipulating Active Directory data, using a Windows DLL that performs operations on AD.
+Soapy is a Python package designed to interact with Active Directory (AD) via Active Directory Web Services. It came into existence due to LDAP queries being prohibited on certain clients. Its main functionality is to gather AD data, cache it, and return it in a Python dictionary format. The package provides convenient methods for fetching and manipulating Active Directory data, using a Windows DLL that performs operations on AD. The DLL is a slightly modded version of SOAPHound where this program is just the wrapper.
 
 ## Features
 
+- Active Directory Web Services Connection
 - Retrieve Active Directory data as a dictionary.
 - Build and store AD cache files.
 - Supports various parameters like user credentials and domain controllers.
-- Easily converts AD data to JSON format for further use.
 
 ## Installation
 
@@ -26,6 +26,7 @@ Soapy is a Python package designed to interact with Active Directory (AD) via .N
 2. Install the required Python dependencies:
 
     ```bash
+    pip install clr
     pip install pythonnet
     ```
 
@@ -110,4 +111,4 @@ print(ad_data)
 
 ## License
 
-This project is currently is under GPL3 license, however the hound.dll file is based on SoapHound, please read SoapHounds rules and licences for information as this is just a SoapHound fork/wrapper for python. 
+This project is currently is under GPL3 license, however the hound.dll file is based on SoapHound, please read SoapHounds rules and licences for information as this is just a SoapHound fork/wrapper for python. Made for an Education Project
