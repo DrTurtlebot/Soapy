@@ -53,7 +53,9 @@ domain_controller = "DOMAIN.CONTROLLER"
 no_laps = True
 
 # Get Active Directory data as a dictionary
-ad_data = get_ad_data_dictionary(user, password, domain_controller, no_laps)
+
+client = SoapyClient()
+ad_data = client.get_ad_data_dictionary(user, password, domain_controller, no_laps)
 
 # Output the data or save it for further processing
 print(ad_data)
@@ -73,7 +75,8 @@ password = "Awesomepassword123"
 domain_controller = "DOMAIN.CONTROLLER"
 
 # Get the AD data as a dictionary
-ad_data = get_ad_data_dictionary(user, password, domain_controller)
+client = SoapyClient()
+ad_data = client.get_ad_data_dictionary(user, password, domain_controller)
 
 # Convert the dictionary to JSON
 ad_data_json = json.dumps(ad_data, indent=4)
@@ -100,7 +103,8 @@ with open("ad_data.json", "w") as json_file:
 ### Example:
 
 ```python
-ad_data = get_ad_data_dictionary("user@domain", "password", "domain_controller", True)
+client = SoapyClient()
+ad_data = client.get_ad_data_dictionary("user@domain", "password", "domain_controller", True)
 print(ad_data)
 ```
 
