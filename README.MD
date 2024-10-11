@@ -52,6 +52,7 @@ if __name__ == "__main__":
                     "CN=Configuration")
         #The simplified Ad object just removes alot of bloat info.  
         print(data)
+        print(simplify_ad_objects(computers))
         #save a json
         with open('data.json', 'w') as f:
             json.dump(data, f)
