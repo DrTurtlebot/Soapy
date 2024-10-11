@@ -14,7 +14,7 @@ clr.AddReference("System.Text.RegularExpressions")
 clr.AddReference("System.Xml")
 clr.AddReference("System.IO")
 clr.AddReference("System.ServiceModel.Security")
-clr.AddReference("dlls/hound")  # Ensure the path is correct and the DLL is accessible
+clr.AddReference("dlls/soapy")  # Ensure the path is correct and the DLL is accessible
 
 # Import necessary classes and modules from the added references
 from System import TimeSpan, String
@@ -670,8 +670,6 @@ if __name__ == "__main__":
             ],
             "CN=Configuration",
         )
-        print(simplify_ad_object(computers))
-        with open("data.json", "w") as f:
-            json.dump(computers, f)
+        print(computers)
 
     asyncio.run(main())
