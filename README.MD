@@ -59,4 +59,4 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ## License
-This project is currently is under GPL3 license, however the hound.dll file is based on SoapHound, please read SoapHounds rules and licences for information as this is just a SoapHound fork/wrapper for python. Made for an Education Project
+Look its free to use and modify, its based on how SoapHound does communication with C#, however modified for python, tiny bit of the soaphound c# code is referenced in the dll. Im not sure on the legality of using it though as the net.tcp binding might be proprietary but Im not too sure. So for legal reasons I cant say you are in the right for using it, Im just putting the code out as this is an educational project for me on ADWS and GSS-API communications along with Soap Protocol
