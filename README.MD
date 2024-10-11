@@ -59,4 +59,5 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ## License
-Look its free to use and modify, its based on how SoapHound does communication with C#, however modified for python, tiny bit of the soaphound c# code is referenced in the dll. Im not sure on the legality of using it though as the net.tcp binding might be proprietary but Im not too sure. So for legal reasons I cant say you are in the right for using it, Im just putting the code out as this is an educational project for me on ADWS and GSS-API communications along with Soap Protocol
+Please note that this code is free to use and modify. It is based on how SoapHound handles communication with C#, but it has been adapted for Python. A small portion of the SoapHound C# code is referenced in the DLL. I'm unsure about the legality of using it, as the net.tcp binding might be proprietary. Therefore, for legal reasons, I cannot confirm that using it is permissible. I'm sharing this code as an educational project to explore Active Directory Web Services (ADWS), GSS-API communications, and the SOAP protocol.
+
