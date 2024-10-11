@@ -2,16 +2,14 @@
 
 # Soapy
 
-Soapy is a Python package designed to interact with Active Directory (AD) via Active Directory Web Services. It came into existence due to LDAP queries being prohibited on certain clients. Its main functionality is to gather AD data, cache it, and return it in a Python dictionary format. The package provides convenient methods for fetching and manipulating Active Directory data, using a Windows DLL that performs operations on AD. The DLL is a slightly modded version of SOAPHound where this program is just the wrapper.
+Soapy is a Python package designed to interact with Active Directory (AD) via Active Directory Web Services. It came into existence due to LDAP queries being prohibited on certain clients. Its main functionality is to gather AD data, turn it in a Python List format. The package provides convenient methods for fetching and manipulating Active Directory data, using a Windows DLL that performs operations on AD. The DLL is a slightly modded version of SOAPHound where this program is just the wrapper of its functions and functionality.
 
 ## Features
 
 - Active Directory Web Services Connection
-- Retrieve Active Directory data as a dictionary.
+- Retrieve Active Directory data as a List.
 - Build and store AD cache files.
 - Supports various parameters like user credentials and domain controllers.
-
-## Installation
 
 ### Requirements
 
@@ -36,15 +34,15 @@ Soapy is a Python package designed to interact with Active Directory (AD) via Ac
 ### Import the Package
 
 ```python
-from soapy import get_ad_data_dictionary
+import soapy
 ```
 
 ### Example: Retrieving AD Data
 
-Here's an example of how to retrieve Active Directory data using the `get_ad_data_dictionary` method:
+Here's an example of how to retrieve Active Directory data using the `soapy_get_all` method:
 
 ```python
-from soapy import get_ad_data_dictionary
+import soapy
 
 # Example user credentials and domain controller
 user = "user@DomainAddress"
@@ -52,10 +50,9 @@ password = "Awesomepassword123"
 domain_controller = "DOMAIN.CONTROLLER"
 no_laps = True
 
-# Get Active Directory data as a dictionary
+# Get Active Directory data as a list of objects
 
-client = SoapyClient()
-ad_data = client.get_ad_data_dictionary(user, password, domain_controller, no_laps)
+ad_data = soapy.soapy_get_all(domain_controller, user, password, no_laps)
 
 # Output the data or save it for further processing
 print(ad_data)
@@ -63,22 +60,24 @@ print(ad_data)
 
 ### Converting to JSON
 
-If you want to convert the resulting dictionary into JSON format:
+If you want to convert the resulting list into JSON format:
 
 ```python
 import json
-from soapy import get_ad_data_dictionary
+import soapy
 
-# Example credentials and domain controller
+# Example user credentials and domain controller
 user = "user@DomainAddress"
 password = "Awesomepassword123"
 domain_controller = "DOMAIN.CONTROLLER"
+no_laps = True
 
-# Get the AD data as a dictionary
-client = SoapyClient()
-ad_data = client.get_ad_data_dictionary(user, password, domain_controller)
+# Get Active Directory data as a list of objects
 
-# Convert the dictionary to JSON
+ad_data = soapy.soapy_get_all(domain_controller, user, password, no_laps)
+
+# Output the data or save it for further processing
+# Convert the list to JSON
 ad_data_json = json.dumps(ad_data, indent=4)
 
 # Save the JSON to a file
@@ -88,30 +87,84 @@ with open("ad_data.json", "w") as json_file:
 
 ## Functions
 
-### `get_ad_data_dictionary(user: str, password: str, domain_controller: str, no_laps: bool = True) -> dict`
+### `soapy_get_all( server: str, user: str, password: str, no_laps: bool = True) -> dict`
 
-**Description**: This is the main function of Soapy. It gathers Active Directory data, caches it, and returns it as a Python dictionary.
+**Description**: This is the main function of Soapy. It gathers Active Directory data, and returns it as a list of objects
 
 - **Parameters**:
+  - `server`: The domain controller to connect to.
   - `user`: The user account for authenticating against the domain.
   - `password`: The password for the user account.
-  - `domain_controller`: The domain controller to connect to.
   - `no_laps`: Boolean flag to control whether to exclude LAPS attributes from the data (default is `True`).
 
-- **Returns**: A dictionary containing the retrieved AD data.
+- **Returns**: A List containing the retrieved AD data.
 
 ### Example:
 
 ```python
-client = SoapyClient()
-ad_data = client.get_ad_data_dictionary("user@domain", "password", "domain_controller", True)
+ad_data = soapy.soapy_get_all("domain_controller","user@domain", "password", True)
 print(ad_data)
 ```
 
-## Cache Management
+### `soapy_get_persons( server: str, user: str, password: str, no_laps: bool = True) -> dict`
 
-- **Cache Location**: The cache files are stored temporarily in the `/soapy_temp_cache/` directory during runtime.
-- **Cache Cleanup**: All cache files are deleted after processing, and the folder is removed to prevent leftover files from cluttering the directory.
+**Description**: This is a side function of Soapy. It gathers Active Directory data, and returns what it thinks are people,
+WARNING these filters are custom made, so may not 100% return all persons, it does in my case but it could be weird
+
+- **Parameters**:
+  - `server`: The domain controller to connect to.
+  - `user`: The user account for authenticating against the domain.
+  - `password`: The password for the user account.
+  - `no_laps`: Boolean flag to control whether to exclude LAPS attributes from the data (default is `True`).
+
+- **Returns**: A List containing the retrieved AD persons.
+
+### Example:
+
+```python
+people = soapy.soapy_get_persons("domain_controller","user@domain", "password", True)
+print(people)
+```
+
+### `soapy_get_computers( server: str, user: str, password: str, no_laps: bool = True) -> dict`
+
+**Description**: This is a side function of Soapy. It gathers Active Directory data, and returns what it thinks are computers,
+WARNING these filters are custom made, so may not 100% return all computers, it does in my case but it could be weird
+
+- **Parameters**:
+  - `server`: The domain controller to connect to.
+  - `user`: The user account for authenticating against the domain.
+  - `password`: The password for the user account.
+  - `no_laps`: Boolean flag to control whether to exclude LAPS attributes from the data (default is `True`).
+
+- **Returns**: A List containing the retrieved AD computers.
+
+### Example:
+
+```python
+computers = soapy.soapy_get_computers("domain_controller","user@domain", "password", True)
+print(computers)
+```
+
+### `soapy_get_domain_controllers( server: str, user: str, password: str, no_laps: bool = True) -> dict`
+
+**Description**: This is a side function of Soapy. It gathers Active Directory data, and returns what it thinks are domain controllers,
+WARNING these filters are custom made, so may not 100% return all domain controllers, it does in my case but it could be weird
+
+- **Parameters**:
+  - `server`: The domain controller to connect to.
+  - `user`: The user account for authenticating against the domain.
+  - `password`: The password for the user account.
+  - `no_laps`: Boolean flag to control whether to exclude LAPS attributes from the data (default is `True`).
+
+- **Returns**: A List containing the retrieved AD domain controllers.
+
+### Example:
+
+```python
+dc = soapy.soapy_get_domain_controllers("domain_controller","user@domain", "password", True)
+print(dc)
+```
 
 ## License
 
