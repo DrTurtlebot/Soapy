@@ -20,7 +20,7 @@ Soapy is a Python package designed to interact with Active Directory (AD) via Ac
 ## Usage
 ### Import the Package
 ```python
-import soapy
+from Soapy import soapy
 ```
 ### Example: Retrieving AD Data
 Here's an example of how to retrieve Active Directory data using the `soapy_custom_ldap` method:
@@ -59,4 +59,5 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ## License
-This project is currently is under GPL3 license, however the hound.dll file is based on SoapHound, please read SoapHounds rules and licences for information as this is just a SoapHound fork/wrapper for python. Made for an Education Project
+Please note that this code is free to use and modify. It is based on how SoapHound handles communication with C#, but it has been adapted for Python. A small portion of the SoapHound C# code is referenced in the DLL. I'm unsure about the legality of using it, as the net.tcp binding might be proprietary. Therefore, for legal reasons, I cannot confirm that using it is permissible. I'm sharing this code as an educational project to explore Active Directory Web Services (ADWS), GSS-API communications, and the SOAP protocol.
+
