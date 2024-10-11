@@ -612,7 +612,11 @@ async def soapy_custom_ldap(
         connector.Close()
 
 
-def simplify_ad_object(obj):
+def simplify_ad_objects(objects):
+    return [internal_simplify_ad_object(comp) for comp in objects]
+
+
+def internal_simplify_ad_object(obj):
     """
     Simplify an AD object by extracting values from nested structures.
     """
@@ -671,5 +675,6 @@ if __name__ == "__main__":
             "CN=Configuration",
         )
         print(computers)
+        print(simplify_ad_objects(computers))
 
     asyncio.run(main())
