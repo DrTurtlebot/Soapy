@@ -37,9 +37,9 @@ Here's an example of how to retrieve Active Directory data using the `soapy_cust
 if __name__ == "__main__":
     # Set up ADWSUtils configuration
     async def main():
-        data = await soapy.soapy_custom_ldap("GUESTDC01.DECEPTION.LOCAL",
-                    "alex@DECEPTION.LOCAL",
-                    "Hunter2!",
+        data = await soapy.soapy_custom_ldap("GUESTDC01.COOLCORP.LOCAL",
+                    "alex@COOLCORP.LOCAL",
+                    "SuperPassword123",
                     "(!soapyisepic=*)",
                     [
                         "name", "sAMAccountName", "cn", "dNSHostName", "objectSid", "objectGUID", "primaryGroupID",
