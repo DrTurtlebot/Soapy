@@ -47,7 +47,7 @@ from SOAPHound.ADWS import (
 
 
 class ADWSConnector:
-    def __init__(self, binding, endpoint_address, credentials):
+    def __init__(self, binding, endpoint_address, credentials, ConnectionInfo):
         print("Initializing ADWSConnector...")
         self.Binding = binding
         self.EndpointAddress = endpoint_address
@@ -66,7 +66,7 @@ class ADWSConnector:
 
         # Initialize SearchClient for Enumerate and Pull operations
         search_endpoint_address = EndpointAddress(
-            f"net.tcp://{ADWSUtils.Server}:{ADWSUtils.Port}/ActiveDirectoryWebServices/Windows/Enumeration"
+            f"net.tcp://{ConnectionInfo['Server']}:{ConnectionInfo['Port']}/ActiveDirectoryWebServices/Windows/Enumeration"
         )
         print("Creating SearchClient with binding and search_endpoint_address...")
         self.SearchClient = SearchClient(binding, search_endpoint_address)
@@ -76,10 +76,6 @@ class ADWSConnector:
         self.InspectClientMethods(self.SearchClient)  # Inspect available methods
 
     def UpdateCredentials(self, client_credentials):
-        """
-        Update the client credentials with impersonation level.
-        Must be called before creating the channel.
-        """
         try:
             print("Updating client credentials...")
 
@@ -88,28 +84,14 @@ class ADWSConnector:
                 hasattr(client_credentials, "Windows")
                 and client_credentials.Windows is not None
             ):
-                print("client_credentials.Windows is available.")
-
                 # Log current impersonation level
                 current_impersonation = (
                     client_credentials.Windows.AllowedImpersonationLevel
                 )
-                print(f"Current AllowedImpersonationLevel: {current_impersonation}")
-
-                # Update impersonation level
                 client_credentials.Windows.AllowedImpersonationLevel = (
                     TokenImpersonationLevel.Impersonation
                 )
-                print("Set AllowedImpersonationLevel to Impersonation.")
-
-                # Log credential type
-                print(f"Setting ClientCredential with type: {type(self.Credentials)}")
-
-                # Update client credential
                 client_credentials.Windows.ClientCredential = self.Credentials
-                print("Set ClientCredential successfully.")
-
-                print("Credentials updated successfully.")
             else:
                 error_msg = "client_credentials.Windows is not available. Cannot update credentials."
                 print("Error:", error_msg)
@@ -119,9 +101,6 @@ class ADWSConnector:
             raise
 
     def InspectClientMethods(self, client):
-        """
-        Inspect and print the available methods of the client.
-        """
         print(f"Inspecting available methods in {client}...")
         methods = [
             method
@@ -131,9 +110,6 @@ class ADWSConnector:
         print(f"Available methods in {client}: {methods}")
 
     async def GetAsync(self, message):
-        """
-        Perform an asynchronous GET request using the WCF client.
-        """
         print("Preparing to perform asynchronous GET request...")
         try:
             loop = asyncio.get_event_loop()
@@ -160,9 +136,6 @@ class ADWSConnector:
             raise
 
     async def GetADInfo(self):
-        """
-        Retrieve Active Directory information using a GET request.
-        """
         print("Starting GetADInfo...")
         ad_info = {"DefaultNamingContext": None, "DomainName": None}
 
@@ -186,10 +159,7 @@ class ADWSConnector:
         print("Added headers to rc_request.")
 
         try:
-            print("Performing GET request to retrieve AD information...")
             response = await self.GetAsync(rc_request)
-            print("Received response from GET request.")
-
             response_document = self.MessageToXDocument(response)
             # print(f"Parsed response_document: {response_document}")
 
@@ -223,18 +193,6 @@ class ADWSConnector:
             raise
 
     async def Enumerate(self, ldapBase, ldapFilter, properties, batchSize=1000):
-        """
-        Perform the Enumerate operation to retrieve AD objects.
-
-        Args:
-            ldapBase (str): The base distinguished name for LDAP queries.
-            ldapFilter (str): The LDAP filter string.
-            properties (list): The list of properties to retrieve.
-            batchSize (int): Number of entries to retrieve per batch.
-
-        Returns:
-            list: A list of AD objects retrieved from the server.
-        """
         print("Starting Enumerate operation...")
 
         # Build the EnumerateRequest XML
@@ -306,15 +264,6 @@ class ADWSConnector:
         return ad_objects
 
     async def EnumerateAsync(self, message):
-        """
-        Send the Enumerate request using the SearchClient.
-
-        Args:
-            message (Message): The SOAP message to send.
-
-        Returns:
-            Message: The SOAP response message.
-        """
         print(f"Sending Enumerate request...")
         try:
             loop = asyncio.get_event_loop()
@@ -340,15 +289,6 @@ class ADWSConnector:
             raise
 
     async def PullAsync(self, message):
-        """
-        Send the Pull request using the SearchClient.
-
-        Args:
-            message (Message): The SOAP message to send.
-
-        Returns:
-            Message: The SOAP response message.
-        """
         print(f"Sending Pull request...")
         try:
             loop = asyncio.get_event_loop()
@@ -372,17 +312,6 @@ class ADWSConnector:
             raise
 
     def BuildEnumerateRequestXml(self, ldapBase, ldapFilter, properties):
-        """
-        Build the XML for the Enumerate request.
-
-        Args:
-            ldapBase (str): The base distinguished name for LDAP queries.
-            ldapFilter (str): The LDAP filter string.
-            properties (list): The list of properties to retrieve.
-
-        Returns:
-            str: The XML string for the Enumerate request.
-        """
         # Define namespaces
         namespaces = {
             "": "http://schemas.xmlsoap.org/ws/2004/09/enumeration",
@@ -446,16 +375,6 @@ class ADWSConnector:
         return xml_str
 
     def BuildPullRequestXml(self, enumeration_context, max_elements):
-        """
-        Build the XML for the Pull request.
-
-        Args:
-            enumeration_context (str): The EnumerationContext string.
-            max_elements (int): The maximum number of elements to retrieve.
-
-        Returns:
-            str: The XML string for the Pull request.
-        """
         # Define namespaces
         namespaces = {
             "": "http://schemas.xmlsoap.org/ws/2004/09/enumeration",
@@ -487,15 +406,6 @@ class ADWSConnector:
         return xml_str
 
     def ParseEnumerationContext(self, response_message):
-        """
-        Parse the EnumerationContext from the Enumerate response.
-
-        Args:
-            response_message (Message): The response message from Enumerate.
-
-        Returns:
-            str: The EnumerationContext string.
-        """
         print("Parsing EnumerationContext from response...")
         response_xml = self.MessageToXDocument(response_message)
         ns = {"a": "http://schemas.xmlsoap.org/ws/2004/09/enumeration"}
@@ -511,15 +421,6 @@ class ADWSConnector:
             return None
 
     def ExtractADObjectsFromResponse(self, response_xml):
-        """
-        Extract AD objects from the Pull response.
-
-        Args:
-            response_xml (Element): The parsed XML of the response.
-
-        Returns:
-            list: A list of AD objects (dictionaries).
-        """
         print("Extracting AD objects from Pull response...")
         ns = {
             "a": "http://schemas.xmlsoap.org/ws/2004/09/enumeration",
@@ -538,15 +439,6 @@ class ADWSConnector:
         return ad_objects
 
     def CheckEndOfSequence(self, response_xml):
-        """
-        Check if the EndOfSequence element is present in the response.
-
-        Args:
-            response_xml (Element): The parsed XML of the response.
-
-        Returns:
-            bool: True if EndOfSequence is present, False otherwise.
-        """
         print("Checking for EndOfSequence in Pull response...")
         ns = {"a": "http://schemas.xmlsoap.org/ws/2004/09/enumeration"}
         eos_elements = response_xml.findall(".//a:EndOfSequence", ns)
@@ -554,16 +446,10 @@ class ADWSConnector:
 
     @staticmethod
     def XmlReaderFromString(xml):
-        """
-        Create an XmlReader from an XML string.
-        """
         print("Creating XmlReader from string...")
         return XmlReader.Create(StringReader(xml))
 
     def MessageToXDocument(self, message):
-        """
-        Convert the WCF Message to an ElementTree XML document.
-        """
         print("Converting WCF Message to XML document...")
         try:
             # Create a buffered copy of the message
@@ -587,10 +473,6 @@ class ADWSConnector:
 
     @staticmethod
     def ParseXmlToDict(element):
-        """
-        Recursive function to convert XML elements to a dictionary, handling attributes and multiple children,
-        while stripping namespaces from tags.
-        """
         # Strip namespace from tag
         tag = element.tag
         if "}" in tag:
@@ -630,9 +512,6 @@ class ADWSConnector:
 
     @staticmethod
     def ConvertLdapNamingContextToDomain(ldap_context):
-        """
-        Convert LDAP naming context to domain format.
-        """
         # print(f"Converting LDAP naming context to domain: {ldap_context}")
         if not ldap_context:
             return ""
@@ -645,9 +524,6 @@ class ADWSConnector:
         return domain
 
     def Close(self):
-        """
-        Close the clients to release resources.
-        """
         print("Closing clients...")
         try:
             self.ResourceClient.Close()
@@ -659,337 +535,7 @@ class ADWSConnector:
             self.SearchClient.Abort()
 
 
-class ADWSUtils:
-    Server = None
-    Port = None
-    Credential = NetworkCredential("", "")
-    nolaps = None
-
-    DCReplaceRegex = Regex("DC=", RegexOptions.IgnoreCase | RegexOptions.Compiled)
-
-    @staticmethod
-    async def GetObjects(label):
-        """
-        Retrieve AD objects based on the specified label.
-        """
-        print(f"GetObjects called with label: {label}")
-        objects = await ADWSUtils.RunEnumeration(label)
-        simplified_objects = [simplify_ad_object(obj) for obj in objects]
-        return simplified_objects
-
-    @staticmethod
-    async def RunEnumeration(label):
-        """
-        Internal method to perform the enumeration.
-        """
-        print(f"RunEnumeration called with label: {label}")
-        return await ADWSUtils.GetObjectsInternal(label)
-
-    @staticmethod
-    async def GetObjectsInternal(label):
-        """
-        Internal function to handle the enumeration logic.
-        """
-        print(f"GetObjectsInternal called with label: {label}")
-
-        # Define LDAP queries and properties based on the label
-        ldapquery = ""
-        properties = []
-        banner = ""
-        ldapbase = ""
-
-        if label == "dns":
-            banner = "Gathering DNS data"
-            ldapquery = "(&(ObjectClass=dnsNode))"
-            properties = ["Name", "dnsRecord"]
-            ldapbase = "CN=MicrosoftDNS,DC=DomainDnsZones,"
-        elif label == "cache":
-            banner = "Generating cache"
-            ldapquery = "(!soapyisepic=*)"
-            properties = ["objectSid", "objectGUID", "distinguishedName"]
-        elif label == "pkicache":
-            banner = "Gathering PKI cache"
-            ldapquery = "(!soapyisepic=*)"
-            properties = ["name", "certificateTemplates"]
-            ldapbase = "CN=Configuration,"
-        elif label == "pkidata":
-            banner = "Gathering PKI data"
-            ldapquery = "(!soapyisepic=*)"
-            properties = [
-                "name",
-                "displayName",
-                "nTSecurityDescriptor",
-                "objectGUID",
-                "dNSHostName",
-                "certificateTemplates",
-                "cACertificate",
-                "msPKI-Minimal-Key-Size",
-                "msPKI-Certificate-Name-Flag",
-                "msPKI-Enrollment-Flag",
-                "msPKI-Private-Key-Flag",
-                "pKIExtendedKeyUsage",
-                "pKIOverlapPeriod",
-                "pKIExpirationPeriod",
-            ]
-            ldapbase = "CN=Configuration,"
-        elif label == "ad":
-            banner = "Gathering AD data"
-            ldapquery = "(!soapyisepic=*)"  # LDAP query string
-            if ADWSUtils.nolaps:
-                properties = [
-                    "name",
-                    "sAMAccountName",
-                    "cn",
-                    "dNSHostName",
-                    "objectSid",
-                    "objectGUID",
-                    "primaryGroupID",
-                    "distinguishedName",
-                    "lastLogonTimestamp",
-                    "pwdLastSet",
-                    "servicePrincipalName",
-                    "description",
-                    "operatingSystem",
-                    "sIDHistory",
-                    "nTSecurityDescriptor",
-                    "userAccountControl",
-                    "whenCreated",
-                    "lastLogon",
-                    "displayName",
-                    "title",
-                    "homeDirectory",
-                    "userPassword",
-                    "unixUserPassword",
-                    "scriptPath",
-                    "adminCount",
-                    "member",
-                    "msDS-Behavior-Version",
-                    "msDS-AllowedToDelegateTo",
-                    "gPCFileSysPath",
-                    "gPLink",
-                    "gPOptions",
-                ]
-            else:
-                properties = [
-                    "name",
-                    "sAMAccountName",
-                    "cn",
-                    "dNSHostName",
-                    "objectSid",
-                    "objectGUID",
-                    "primaryGroupID",
-                    "distinguishedName",
-                    "lastLogonTimestamp",
-                    "pwdLastSet",
-                    "servicePrincipalName",
-                    "description",
-                    "operatingSystem",
-                    "sIDHistory",
-                    "nTSecurityDescriptor",
-                    "userAccountControl",
-                    "whenCreated",
-                    "lastLogon",
-                    "ms-MCS-AdmPwdExpirationTime",
-                    "displayName",
-                    "title",
-                    "homeDirectory",
-                    "userPassword",
-                    "unixUserPassword",
-                    "scriptPath",
-                    "adminCount",
-                    "member",
-                    "msDS-Behavior-Version",
-                    "msDS-AllowedToDelegateTo",
-                    "gPCFileSysPath",
-                    "gPLink",
-                    "gPOptions",
-                ]
-        elif label == "domaintrusts":
-            banner = "Gathering DomainTrusts data"
-            ldapquery = "(trustType=*)"
-            properties = [
-                "trustAttributes",
-                "trustDirection",
-                "name",
-                "securityIdentifier",
-            ]
-        elif label == "domains":
-            banner = "Gathering Domains data"
-            ldapquery = "(ms-DS-MachineAccountQuota=*)"
-            properties = [
-                "name",
-                "sAMAccountName",
-                "cn",
-                "dNSHostName",
-                "objectSid",
-                "objectGUID",
-                "primaryGroupID",
-                "distinguishedName",
-                "lastLogonTimestamp",
-                "pwdLastSet",
-                "servicePrincipalName",
-                "description",
-                "operatingSystem",
-                "sIDHistory",
-                "nTSecurityDescriptor",
-                "userAccountControl",
-                "whenCreated",
-                "lastLogon",
-                "displayName",
-                "title",
-                "homeDirectory",
-                "userPassword",
-                "unixUserPassword",
-                "scriptPath",
-                "adminCount",
-                "member",
-                "msDS-Behavior-Version",
-                "msDS-AllowedToDelegateTo",
-                "gPCFileSysPath",
-                "gPLink",
-                "gPOptions",
-            ]
-        elif label == "nonchars":
-            banner = "Gathering non alphanumeric objects"
-            ldapquery = "(&(cn=*)(!(cn=a*))(!(cn=b*))(!(cn=c*))(!(cn=d*))(!(cn=e*))(!(cn=f*))(!(cn=g*))(!(cn=h*))(!(cn=i*))(!(cn=j*))(!(cn=k*))(!(cn=l*))(!(cn=m*))(!(cn=n*))(!(cn=o*))(!(cn=p*))(!(cn=q*))(!(cn=r*))(!(cn=s*))(!(cn=t*))(!(cn=u*))(!(cn=v*))(!(cn=w*))(!(cn=x*))(!(cn=y*))(!(cn=z*))(!(cn=0*))(!(cn=1*))(!(cn=2*))(!(cn=3*))(!(cn=4*))(!(cn=5*))(!(cn=6*))(!(cn=7*))(!(cn=8*))(!(cn=9*)))"
-            properties = [
-                "name",
-                "sAMAccountName",
-                "cn",
-                "dNSHostName",
-                "objectSid",
-                "objectGUID",
-                "primaryGroupID",
-                "distinguishedName",
-                "lastLogonTimestamp",
-                "pwdLastSet",
-                "servicePrincipalName",
-                "description",
-                "operatingSystem",
-                "sIDHistory",
-                "nTSecurityDescriptor",
-                "userAccountControl",
-                "whenCreated",
-                "lastLogon",
-                "displayName",
-                "title",
-                "homeDirectory",
-                "userPassword",
-                "unixUserPassword",
-                "scriptPath",
-                "adminCount",
-                "member",
-                "msDS-Behavior-Version",
-                "msDS-AllowedToDelegateTo",
-                "gPCFileSysPath",
-                "gPLink",
-                "gPOptions",
-            ]
-        else:
-            banner = f"Gathering autosplit data: {label}"
-            ldapquery = label
-            properties = [
-                "name",
-                "sAMAccountName",
-                "cn",
-                "dNSHostName",
-                "objectSid",
-                "objectGUID",
-                "primaryGroupID",
-                "distinguishedName",
-                "lastLogonTimestamp",
-                "pwdLastSet",
-                "servicePrincipalName",
-                "description",
-                "operatingSystem",
-                "sIDHistory",
-                "nTSecurityDescriptor",
-                "userAccountControl",
-                "whenCreated",
-                "lastLogon",
-                "ms-MCS-AdmPwdExpirationTime",
-                "displayName",
-                "title",
-                "homeDirectory",
-                "userPassword",
-                "unixUserPassword",
-                "scriptPath",
-                "adminCount",
-                "member",
-                "msDS-Behavior-Version",
-                "msDS-AllowedToDelegateTo",
-                "gPCFileSysPath",
-                "gPLink",
-                "gPOptions",
-            ]
-
-        print("-------------")
-        print(f"Banner: {banner}")
-
-        # Initialize the ADWSConnector
-        print(
-            f"Creating ADWSConnector with Server: {ADWSUtils.Server} and Credentials: {ADWSUtils.Credential}."
-        )
-
-        # Configure the binding with explicit SecurityMode and ClientCredentialType
-        binding = NetTcpBinding()
-        binding.Security.Mode = SecurityMode.Transport
-        binding.Security.Transport.ClientCredentialType = (
-            TcpClientCredentialType.Windows
-        )
-        binding.MaxBufferSize = 1073741824  # 1 GB
-        binding.MaxReceivedMessageSize = 1073741824  # 1 GB
-
-        # Set ReaderQuotas
-        binding.ReaderQuotas.MaxDepth = 64
-        binding.ReaderQuotas.MaxArrayLength = 2147483647
-        binding.ReaderQuotas.MaxStringContentLength = 2147483647
-        binding.ReaderQuotas.MaxNameTableCharCount = 2147483647
-        binding.ReaderQuotas.MaxBytesPerRead = 2147483647
-
-        resource_endpoint_address = EndpointAddress(
-            f"net.tcp://{ADWSUtils.Server}:{ADWSUtils.Port}/ActiveDirectoryWebServices/Windows/Resource"
-        )
-
-        # Create the connector instance
-        print("Instantiating ADWSConnector...")
-        connector = ADWSConnector(
-            binding, resource_endpoint_address, ADWSUtils.Credential
-        )
-
-        try:
-            # Retrieve AD information
-            print("Retrieving AD domain information...")
-            domainInfo = await connector.GetADInfo()
-            print("Domain Info:")
-            # print(domainInfo)
-
-            if not domainInfo["DefaultNamingContext"]:
-                print(
-                    "Error: Failed to retrieve DefaultNamingContext. Exiting enumeration."
-                )
-                return {}
-
-            # Update ldapbase and log the new value
-            ldapbase += domainInfo["DefaultNamingContext"]
-            # print(f"Updated ldapbase: {ldapbase}")
-
-            # Execute ADWS Enumeration
-            # print(f"Enumerating AD objects with ldapbase: {ldapbase}, ldapquery: {ldapquery}, properties: {', '.join(properties)}")
-            adobjects = await connector.Enumerate(ldapbase, ldapquery, properties)
-
-            # Log completion of the ADWS request
-            print(f"{banner} complete")
-
-            return adobjects
-        finally:
-            connector.Close()
-
-
 def extract_value(value):
-    """
-    Recursively extract the 'value' from nested dictionaries and lists.
-    """
     if isinstance(value, dict):
         # If the value is a dictionary with a 'value' key, extract it
         if "value" in value:
@@ -1003,6 +549,67 @@ def extract_value(value):
     else:
         # Base case: value is a primitive type (e.g., str, int)
         return value
+
+
+async def soapy_custom_ldap(
+    server, user, password, ldapquery, properties, ldapbase, nolaps=True
+):
+    ConnectionInfo = {}
+    ConnectionInfo["Server"] = server
+    ConnectionInfo["Port"] = 9389
+    ConnectionInfo["Credential"] = NetworkCredential(user, password)
+    ConnectionInfo["nolaps"] = nolaps
+    print(f"Creating ADWSConnector with Server: {ConnectionInfo["Server"]}.")
+    # Configure the binding with explicit SecurityMode and ClientCredentialType
+    binding = NetTcpBinding()
+    binding.Security.Mode = SecurityMode.Transport
+    binding.Security.Transport.ClientCredentialType = TcpClientCredentialType.Windows
+    binding.MaxBufferSize = 1073741824  # 1 GB
+    binding.MaxReceivedMessageSize = 1073741824  # 1 GB
+
+    # Set ReaderQuotas
+    binding.ReaderQuotas.MaxDepth = 64
+    binding.ReaderQuotas.MaxArrayLength = 2147483647
+    binding.ReaderQuotas.MaxStringContentLength = 2147483647
+    binding.ReaderQuotas.MaxNameTableCharCount = 2147483647
+    binding.ReaderQuotas.MaxBytesPerRead = 2147483647
+
+    resource_endpoint_address = EndpointAddress(
+        f"net.tcp://{ConnectionInfo['Server']}:{ConnectionInfo['Port']}/ActiveDirectoryWebServices/Windows/Resource"
+    )
+
+    # Create the connector instance
+    print("Instantiating ADWSConnector...")
+    connector = ADWSConnector(
+        binding, resource_endpoint_address, ConnectionInfo["Credential"], ConnectionInfo
+    )
+
+    try:
+        # Retrieve AD information
+        print("Retrieving AD domain information...")
+        domainInfo = await connector.GetADInfo()
+        print("Domain Info:")
+        # print(domainInfo)
+
+        if not domainInfo["DefaultNamingContext"]:
+            print(
+                "Error: Failed to retrieve DefaultNamingContext. Exiting enumeration."
+            )
+            return {}
+
+        # Update ldapbase and log the new value
+        ldapbase += domainInfo["DefaultNamingContext"]
+        # print(f"Updated ldapbase: {ldapbase}")
+
+        # Execute ADWS Enumeration
+        # print(f"Enumerating AD objects with ldapbase: {ldapbase}, ldapquery: {ldapquery}, properties: {', '.join(properties)}")
+        adobjects = await connector.Enumerate(ldapbase, ldapquery, properties)
+
+        # Log completion of the ADWS request
+
+        return adobjects
+    finally:
+        connector.Close()
 
 
 def simplify_ad_object(obj):
@@ -1019,161 +626,51 @@ def simplify_ad_object(obj):
     return simplified_obj
 
 
-async def soapy_get_computers(server, user, password, nolaps=True):
-    ADWSUtils.Server = server
-    ADWSUtils.Port = 9389
-    ADWSUtils.Credential = NetworkCredential(user, password)
-    ADWSUtils.nolaps = nolaps
-
-    objects = await ADWSUtils.GetObjects("ad")
-    computers = [obj for obj in objects if soapy_internal_is_computer(obj)]
-    return computers
-
-
-async def soapy_get_domain_controllers(server, user, password, nolaps=True):
-    ADWSUtils.Server = server
-    ADWSUtils.Port = 9389
-    ADWSUtils.Credential = NetworkCredential(user, password)
-    ADWSUtils.nolaps = nolaps
-
-    # Retrieve AD objects
-    objects = await ADWSUtils.GetObjects("ad")
-
-    # Filter to get only domain controller objects
-    domain_controllers = [
-        obj for obj in objects if soapy_internal_is_domain_controller(obj)
-    ]
-    return domain_controllers
-
-
-def soapy_internal_is_domain_controller(obj):
-    # Check 'objectClass'
-    object_classes = obj.get("objectClass")
-    is_computer = False
-    if object_classes:
-        if isinstance(object_classes, list):
-            if "computer" in [oc.lower() for oc in object_classes]:
-                is_computer = True
-        elif isinstance(object_classes, str):
-            if object_classes.lower() == "computer":
-                is_computer = True
-
-    if not is_computer:
-        return False
-
-    # Check 'userAccountControl' for SERVER_TRUST_ACCOUNT flag (8192)
-    user_account_control = obj.get("userAccountControl")
-    if user_account_control:
-        user_account_control = int(user_account_control)
-        if user_account_control & 8192:
-            return True
-
-    return False
-
-
-def soapy_internal_is_computer(obj):
-    # Helper function to extract values from an attribute
-    def get_values(attr):
-        if isinstance(attr, dict):
-            value = attr.get("value")
-            if isinstance(value, list):
-                return value
-            elif value is not None:
-                return [value]
-        elif isinstance(attr, list):
-            values = []
-            for item in attr:
-                if isinstance(item, dict):
-                    val = item.get("value")
-                    if isinstance(val, list):
-                        values.extend(val)
-                    elif val is not None:
-                        values.append(val)
-                elif isinstance(item, str):
-                    values.append(item)
-            return values
-        elif isinstance(attr, str):
-            return [attr]
-        return []
-
-    # Check 'objectClass'
-    object_classes = get_values(obj.get("objectClass"))
-    for oc in object_classes:
-        if oc.lower() == "computer":
-            return True
-
-    # Check 'sAMAccountType'
-    sAMAccountTypes = get_values(obj.get("sAMAccountType"))
-    for sat in sAMAccountTypes:
-        if sat == "805306369":  # sAMAccountType for computers
-            return True
-
-    # Check 'objectCategory'
-    object_categories = get_values(obj.get("objectCategory"))
-    for oc in object_categories:
-        if "CN=Computer" in oc:
-            return True
-
-    return False
-
-
-async def soapy_get_persons(server, user, password, nolaps=True):
-    ADWSUtils.Server = server
-    ADWSUtils.Port = 9389
-    ADWSUtils.Credential = NetworkCredential(user, password)
-    ADWSUtils.nolaps = nolaps
-
-    # Retrieve AD objects
-    objects = await ADWSUtils.GetObjects("ad")
-
-    # Filter to get only person (user) objects
-    persons = [obj for obj in objects if soapy_internal_is_person(obj)]
-    return persons
-
-
-def soapy_internal_is_person(obj):
-    # Check 'objectClass'
-    object_classes = obj.get("objectClass")
-    if object_classes:
-        if isinstance(object_classes, list):
-            if "user" in [oc.lower() for oc in object_classes]:
-                return True
-        elif isinstance(object_classes, str):
-            if object_classes.lower() == "user":
-                return True
-
-    # Check 'sAMAccountType'
-    sAMAccountType = obj.get("sAMAccountType")
-    if sAMAccountType == "805306368":  # sAMAccountType for users
-        return True
-
-    # Check 'objectCategory'
-    object_category = obj.get("objectCategory")
-    if object_category and "CN=Person" in object_category:
-        return True
-
-    return False
-
-
-async def soapy_get_all(server, user, password, nolaps=True):
-    ADWSUtils.Server = server
-    ADWSUtils.Port = 9389
-    ADWSUtils.Credential = NetworkCredential(user, password)
-    ADWSUtils.nolaps = nolaps
-
-    # Retrieve AD objects
-    objects = await ADWSUtils.GetObjects("ad")
-    # Filter to get only OU objects
-    return objects
-
-
 # Example usage
 if __name__ == "__main__":
     # Set up ADWSUtils configuration
     async def main():
-        computers = await soapy_get_all(
-            "GREAT.EXAMPLE.LOCAL", "Cool@EXAMPLE.LOCAL", "epicpassword2!"
+        computers = await soapy_custom_ldap(
+            "GUEST.COOL.LOCAL",
+            "turtle@COOL.LOCAL",
+            "EpicPassword!",
+            "(!soapyisepic=*)",
+            [
+                "name",
+                "sAMAccountName",
+                "cn",
+                "dNSHostName",
+                "objectSid",
+                "objectGUID",
+                "primaryGroupID",
+                "distinguishedName",
+                "lastLogonTimestamp",
+                "pwdLastSet",
+                "servicePrincipalName",
+                "description",
+                "operatingSystem",
+                "sIDHistory",
+                "nTSecurityDescriptor",
+                "userAccountControl",
+                "whenCreated",
+                "lastLogon",
+                "displayName",
+                "title",
+                "homeDirectory",
+                "userPassword",
+                "unixUserPassword",
+                "scriptPath",
+                "adminCount",
+                "member",
+                "msDS-Behavior-Version",
+                "msDS-AllowedToDelegateTo",
+                "gPCFileSysPath",
+                "gPLink",
+                "gPOptions",
+            ],
+            "CN=Configuration",
         )
+        print(simplify_ad_object(computers))
         with open("data.json", "w") as f:
             json.dump(computers, f)
 
