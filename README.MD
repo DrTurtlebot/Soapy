@@ -20,8 +20,7 @@ Soapy is a Python package designed to interact with Active Directory (AD) via Ac
 ## Usage
 ### Import the Package
 ```python
-import soapy
-```
+from Soapy import soapy```
 ### Example: Retrieving AD Data
 Here's an example of how to retrieve Active Directory data using the `soapy_custom_ldap` method:
 - **Parameters**:
