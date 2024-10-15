@@ -524,11 +524,9 @@ class ADWSConnector:
         return domain
 
     def Close(self):
-        print("Closing clients...")
         try:
             self.ResourceClient.Close()
             self.SearchClient.Close()
-            print("Clients closed successfully.")
         except Exception as e:
             print(f"An error occurred while closing the clients: {e}")
             self.ResourceClient.Abort()
@@ -551,65 +549,69 @@ def extract_value(value):
         return value
 
 
-async def soapy_custom_ldap(
-    server, user, password, ldapquery, properties, ldapbase, nolaps=True
-):
-    ConnectionInfo = {}
-    ConnectionInfo["Server"] = server
-    ConnectionInfo["Port"] = 9389
-    ConnectionInfo["Credential"] = NetworkCredential(user, password)
-    ConnectionInfo["nolaps"] = nolaps
-    print(f"Creating ADWSConnector with Server: {ConnectionInfo["Server"]}.")
-    # Configure the binding with explicit SecurityMode and ClientCredentialType
-    binding = NetTcpBinding()
-    binding.Security.Mode = SecurityMode.Transport
-    binding.Security.Transport.ClientCredentialType = TcpClientCredentialType.Windows
-    binding.MaxBufferSize = 1073741824  # 1 GB
-    binding.MaxReceivedMessageSize = 1073741824  # 1 GB
+class Connection:
+    def __init__(self, server, user, password):
+        self.server = server
+        self.user = user
+        self.password = password
+        self.port = 9389  # Default port for ADWS
 
-    # Set ReaderQuotas
-    binding.ReaderQuotas.MaxDepth = 64
-    binding.ReaderQuotas.MaxArrayLength = 2147483647
-    binding.ReaderQuotas.MaxStringContentLength = 2147483647
-    binding.ReaderQuotas.MaxNameTableCharCount = 2147483647
-    binding.ReaderQuotas.MaxBytesPerRead = 2147483647
+        # Initialize binding, credentials, and endpoint address
+        self.credentials = NetworkCredential(user, password)
+        self.binding = NetTcpBinding()
+        self.binding.Security.Mode = SecurityMode.Transport
+        self.binding.Security.Transport.ClientCredentialType = (
+            TcpClientCredentialType.Windows
+        )
+        self.binding.MaxBufferSize = 1073741824  # 1 GB
+        self.binding.MaxReceivedMessageSize = 1073741824  # 1 GB
+        self.binding.ReaderQuotas.MaxDepth = 64
+        self.binding.ReaderQuotas.MaxArrayLength = 2147483647
+        self.binding.ReaderQuotas.MaxStringContentLength = 2147483647
+        self.binding.ReaderQuotas.MaxNameTableCharCount = 2147483647
+        self.binding.ReaderQuotas.MaxBytesPerRead = 2147483647
 
-    resource_endpoint_address = EndpointAddress(
-        f"net.tcp://{ConnectionInfo['Server']}:{ConnectionInfo['Port']}/ActiveDirectoryWebServices/Windows/Resource"
-    )
+        self.resource_endpoint_address = EndpointAddress(
+            f"net.tcp://{server}:{self.port}/ActiveDirectoryWebServices/Windows/Resource"
+        )
+        self.connection_info = {
+            "Server": server,
+            "Port": self.port,
+            "Credential": self.credentials,
+        }
 
-    # Create the connector instance
-    print("Instantiating ADWSConnector...")
-    connector = ADWSConnector(
-        binding, resource_endpoint_address, ConnectionInfo["Credential"], ConnectionInfo
-    )
+        # Instantiate ADWSConnector
+        self.connector = ADWSConnector(
+            self.binding,
+            self.resource_endpoint_address,
+            self.credentials,
+            self.connection_info,
+        )
 
-    try:
-        # Retrieve AD information
-        print("Retrieving AD domain information...")
-        domainInfo = await connector.GetADInfo()
-        print("Domain Info:")
-        # print(domainInfo)
+    async def soapy_custom_ldap(self, ldapquery, properties, ldapbase, nolaps=True):
+        try:
+            # Retrieve AD information
+            print("Retrieving AD domain information...")
+            domainInfo = await self.connector.GetADInfo()
+            print("Domain Info:")
 
-        if not domainInfo["DefaultNamingContext"]:
-            print(
-                "Error: Failed to retrieve DefaultNamingContext. Exiting enumeration."
-            )
-            return {}
+            if not domainInfo["DefaultNamingContext"]:
+                print(
+                    "Error: Failed to retrieve DefaultNamingContext. Exiting enumeration."
+                )
+                return {}
 
-        # Update ldapbase and log the new value
-        ldapbase += domainInfo["DefaultNamingContext"]
-        # print(f"Updated ldapbase: {ldapbase}")
+            # Update ldapbase and log the new value
+            ldapbase += domainInfo["DefaultNamingContext"]
 
-        # Execute ADWS Enumeration
-        # print(f"Enumerating AD objects with ldapbase: {ldapbase}, ldapquery: {ldapquery}, properties: {', '.join(properties)}")
-        adobjects = await connector.Enumerate(ldapbase, ldapquery, properties)
+            # Execute ADWS Enumeration
+            adobjects = await self.connector.Enumerate(ldapbase, ldapquery, properties)
 
-        # Log completion of the ADWS request
+            # Log completion of the ADWS request
 
-        return adobjects
-    finally:
-        connector.Close()
+            return adobjects
+        finally:
+            self.connector.Close()
 
 
 def simplify_ad_objects(objects):
@@ -634,12 +636,17 @@ def internal_simplify_ad_object(obj):
 if __name__ == "__main__":
     # Set up ADWSUtils configuration
     async def main():
-        computers = await soapy_custom_ldap(
-            "GUEST.COOL.LOCAL",
-            "turtle@COOL.LOCAL",
-            "EpicPassword!",
-            "(!soapyisepic=*)",
-            [
+        # Initialize connection
+        client = Connection(
+            server="GUESTDC01.COOLCORP.LOCAL",
+            user="alex@COOLCORP.LOCAL",
+            password="Hunter2!",
+        )
+
+        # Query using the established connection
+        computers = await client.soapy_custom_ldap(
+            ldapquery="(!soapyisepic=*)",
+            properties=[
                 "name",
                 "sAMAccountName",
                 "cn",
@@ -672,9 +679,12 @@ if __name__ == "__main__":
                 "gPLink",
                 "gPOptions",
             ],
-            "CN=Configuration",
+            ldapbase="CN=Configuration",
         )
+
+        # Print the results
         print(computers)
         print(simplify_ad_objects(computers))
 
+    # Run the main function
     asyncio.run(main())
